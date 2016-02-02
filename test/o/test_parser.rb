@@ -5,7 +5,7 @@ describe O::Parser do
     @parser = O::Parser.new
   end
 
-  it 'should parse a int' do
+  it 'should parse an int' do
     @parser.parse("1").must_equal  integer: 1
     @parser.parse("-1").must_equal  integer: -1
   end

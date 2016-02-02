@@ -11,8 +11,7 @@ module O
   end
 
   class Parser < Parslet::Parser
-    include Contracts::Core
-    include Contracts::Builtin
+    include Contracts
 
     root :expression
 
@@ -44,7 +43,7 @@ module O
     }
 
     rule(:symbol) {
-      (match('[a-zA-Z=*-]') >> match('[a-zA-Z=*_-]').repeat).as(:symbol) >> space?
+      (match('[a-zA-Z=*-]|\+') >> match('[a-zA-Z=*_-]').repeat).as(:symbol) >> space?
     }
 
     rule(:integer) {
