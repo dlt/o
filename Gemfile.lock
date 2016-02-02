@@ -3,6 +3,7 @@ GEM
   specs:
     blankslate (2.1.2.4)
     coderay (1.1.0)
+    contracts (0.13.0)
     ffi (1.9.10)
     formatador (0.2.5)
     guard (2.13.0)
@@ -45,10 +46,12 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  contracts
   guard
   guard-minitest
   minitest
   parslet
+  pry
 
 BUNDLED WITH
    1.10.6

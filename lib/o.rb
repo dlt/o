@@ -1,6 +1,2 @@
-module O
-  class Parser
-    def parse
-    end
-  end
-end
+require 'contracts'
+require 'o/parser'
