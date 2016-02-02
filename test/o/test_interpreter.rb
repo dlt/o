@@ -31,4 +31,11 @@ describe O::Interpreter do
     @interpreter.eval('(* 2 3)').must_equal 6
     @interpreter.eval('(* 2 3 1 10)').must_equal 60
   end
+
+  it 'should evaluate if expressions' do
+    @interpreter.eval('(if #t 1 2)').must_equal 1
+    @interpreter.eval('(if #f 1 2)').must_equal 2
+    @interpreter.eval('(if #f 1 (if #t 2 3))').must_equal 2
+    @interpreter.eval('(if #f 1 (if #f 2 3))').must_equal 3
+  end
 end

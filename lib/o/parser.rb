@@ -8,6 +8,14 @@ module O
     rule(boolean: simple(:x))  { { boolean: x == "#t"  } }
     rule(float:   simple(:x))  { { float:   Float(x)   } }
     rule(symbol:  simple(:x))  { { symbol:  x.to_sym   } }
+    rule(funcall: subtree(:x)) do
+      if x[:funcname][:symbol] == :if
+        args = x[:args]
+        { if: { test: args[0], conseq: args[1], alt: args[2] }}
+      else
+        { funcall: x }
+      end
+    end
   end
 
   class Parser < Parslet::Parser
@@ -19,20 +27,20 @@ module O
       boolean | string | symbol |  float | integer | funcall
     }
 
-    rule(:body) {
-      (expression | identifier | float | integer | string).repeat.as(:exp)
-    }
-
     rule(:funcall) {
       (
-        str("(") >>
+        left_paren >>
         space? >>
         symbol.as(:funcname) >>
         space? >>
         (expression >> space?).repeat(1).as(:args) >>
-        space? >> str(')')
+        space? >>
+        right_paren
       ).as(:funcall)
     }
+
+    rule(:left_paren)  { str("(") }
+    rule(:right_paren) { str(")") }
 
     rule(:space) {
       match('\s').repeat(1)

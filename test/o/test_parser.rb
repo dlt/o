@@ -37,4 +37,8 @@ describe O::Parser do
     @parser.parse('(list  (list 1))').must_equal  funcall: { funcname: {symbol: :list}, args: [{funcall: { funcname: {symbol: :list}, args: [{ integer: 1}] } }] }
     @parser.parse('(list  (list "string"))').must_equal  funcall: { funcname: {symbol: :list}, args: [{funcall: { funcname: {symbol: :list}, args: [{ string: "string" }] } }] }
   end
+
+  it 'should parse if expressions' do
+    @parser.parse('(if #t 1 2)').must_equal if: { test: { boolean: true }, conseq: { integer: 1 }, alt: { integer: 2 } }
+  end
 end
