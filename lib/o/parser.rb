@@ -1,5 +1,4 @@
 require 'parslet'
-require 'pry'
 
 module O
   class ASTBuilder < Parslet::Transform
@@ -74,8 +73,8 @@ module O
     }
 
     Contract String => Hash
-    def parse string
-      ASTBuilder.new.apply super
+    def parse(string)
+      ASTBuilder.new.apply(super)
     rescue => error
       puts error.cause.ascii_tree
       raise error
