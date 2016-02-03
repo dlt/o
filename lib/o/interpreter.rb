@@ -6,22 +6,35 @@ module O
     # A valid scheme value must be one of the following:
     SchemeValue = Or[Integer, Float, Bool, String, Symbol, Array]
 
+    # Top level environment containing builtin functions
+    attr_reader :top_level_environment
+
+    def initialize
+      @top_level_environment = Environment.new \
+        :"+" => -> (*args) { Array(args).inject(0) {|s, v| s + v } },
+        :"*" => -> (*args) { Array(args).inject(1) {|p, v| p * v } },
+        :"-" => -> (*args) { args = Array(args); total = args.shift; args.each { |a| total -= a }; total },
+        :"/" => -> (*args) { args = Array(args).inject { |p, v| p / v } },
+        list:   -> (*args) { Array(args) }
+    end
+
     # Evaluates a string containing scheme code and evaluates it.
     #
     # @param [String] string a string containing scheme code.
     # @return [SchemeValue]
     Contract String => SchemeValue
     def eval(string)
-      eval_ast(Parser.new.parse(string))
+      eval_ast(Parser.new.parse(string), top_level_environment)
     end
 
     private
     # Evaluates the AST and returns a scheme value.
     #
     # @param [Hash] ast_node the AST node to be evaluated.
+    # @param [Environment] env the enviroment used as context for AST evaluation.
     # @return [SchemeValue]
-    Contract Hash => SchemeValue
-    def eval_ast(ast_node)
+    Contract Hash, Environment => SchemeValue
+    def eval_ast(ast_node, env)
       case node_type = ast_node.keys.first
 
       # when node represents a self-evaluating expression, just return the expression value.
@@ -33,10 +46,10 @@ module O
       when :if
         if_expression = ast_node[node_type]
 
-        if eval_ast(if_expression[:test])
-          eval_ast(if_expression[:conseq])
+        if eval_ast(if_expression[:test], env)
+          eval_ast(if_expression[:conseq], env)
         else
-          eval_ast(if_expression[:alt])
+          eval_ast(if_expression[:alt], env)
         end
 
       # when node is a function call:
@@ -49,7 +62,7 @@ module O
 
         if builtin_procedure?(funcname)
           fun = get_builtin_procedure(funcname)
-          fun.call(*args.map { |a| eval_ast(a) })
+          fun.call(*args.map { |a| eval_ast(a, env) })
         end
       end
     end
@@ -61,7 +74,7 @@ module O
     # @return [Bool]
     Contract Symbol => Bool
     def builtin_procedure?(symbol)
-      %i(list + * - /).member?(symbol)
+      top_level_environment.keys.member?(symbol)
     end
 
     # Given a symbol containing a vaid built-in procedure name,
@@ -71,13 +84,7 @@ module O
     # @return [Proc]
     Contract Symbol => Proc
     def get_builtin_procedure(symbol)
-      {
-        :"+" => -> (*args) { Array(args).inject(0) {|s, v| s + v } },
-        :"*" => -> (*args) { Array(args).inject(1) {|p, v| p * v } },
-        :"-" => -> (*args) { args = Array(args); total = args.shift; args.each { |a| total -= a }; total },
-        :"/" => -> (*args) { args = Array(args).inject { |p, v| p / v } },
-        list:   -> (*args) { Array(args) },
-      }.fetch(symbol)
+      top_level_environment.fetch(symbol)
     end
   end
 end
