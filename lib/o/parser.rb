@@ -50,7 +50,7 @@ module O
     }
 
     rule(:symbol) {
-      (match('[a-zA-Z=*-]|\+') >> match('[a-zA-Z=*_-]').repeat).as(:symbol) >> space?
+      (match('[a-zA-Z=*-/]|\+') >> match('[a-zA-Z=*_-]').repeat).as(:symbol) >> space?
     }
 
     rule(:integer) {

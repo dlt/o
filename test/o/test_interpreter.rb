@@ -30,6 +30,10 @@ describe O::Interpreter do
     @interpreter.eval('(+ 2 3 10 20 100)').must_equal 135
     @interpreter.eval('(* 2 3)').must_equal 6
     @interpreter.eval('(* 2 3 1 10)').must_equal 60
+    @interpreter.eval('(* 2 3 (+ 1 1))').must_equal 12
+    @interpreter.eval('(* 2 3 (- 3 1))').must_equal 12
+    @interpreter.eval('(/ 8 4)').must_equal 2
+    @interpreter.eval('(/ 8.8 4)').must_equal 2.2
   end
 
   it 'should evaluate if expressions' do

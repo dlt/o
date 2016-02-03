@@ -24,7 +24,7 @@ module O
     def eval_ast(ast_node)
       case node_type = ast_node.keys.first
 
-      # When node represents a self-evaluating expression, just return the expression value.
+      # when node represents a self-evaluating expression, just return the expression value.
       when :integer, :boolean, :symbol, :string, :float
         ast_node[node_type]
 
@@ -61,7 +61,7 @@ module O
     # @return [Bool]
     Contract Symbol => Bool
     def builtin_procedure?(symbol)
-      %i(list + *).member?(symbol)
+      %i(list + * - /).member?(symbol)
     end
 
     # Given a symbol containing a vaid built-in procedure name,
@@ -74,6 +74,8 @@ module O
       {
         :"+" => -> (*args) { Array(args).inject(0) {|s, v| s + v } },
         :"*" => -> (*args) { Array(args).inject(1) {|p, v| p * v } },
+        :"-" => -> (*args) { args = Array(args); total = args.shift; args.each { |a| total -= a }; total },
+        :"/" => -> (*args) { args = Array(args).inject { |p, v| p / v } },
         list:   -> (*args) { Array(args) },
       }.fetch(symbol)
     end
