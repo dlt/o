@@ -12,7 +12,6 @@ module O
       when :if
         args = x[:args]
         { if: { test: args[0], conseq: args[1], alt: args[2] }}
-      when :lambda
       else
         { funcall: x }
       end
@@ -86,7 +85,18 @@ module O
     }
 
     rule(:lambda_exp) {
-      (space? >> left_paren >> space? >> str("lambda") >> space? >> list_of_expressions.as(:formal_params) >> space? >> list_of_expressions.as(:lambda_body) >> space? >> right_paren).as(:lambda)
+      (
+        space? >>
+        left_paren >>
+        space? >>
+        str("lambda") >>
+        space? >>
+        list_of_expressions.as(:formal_params) >>
+        space? >>
+        list_of_expressions.as(:lambda_body) >>
+        space? >>
+        right_paren
+      ).as(:lambda)
     }
 
     rule(:list_of_expressions) {
@@ -97,6 +107,7 @@ module O
     def parse(string)
       ASTBuilder.new.apply(super)
     rescue => error
+      puts error
       puts error.cause.ascii_tree
       raise error
     end
