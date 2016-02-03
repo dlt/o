@@ -61,8 +61,9 @@ module O
         args = ast_node[:funcall][:args]
 
         if builtin_procedure?(funcname)
-          fun = get_builtin_procedure(funcname)
-          fun.call(*args.map { |a| eval_ast(a, env) })
+          procedure = get_builtin_procedure(funcname)
+          arguments = args.map { |a| eval_ast(a, env) }
+          procedure.call(*arguments)
         end
       end
     end

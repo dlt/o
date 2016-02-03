@@ -1,9 +1,9 @@
 source 'https://rubygems.org'
 
-gem 'minitest'
 gem 'parslet'
+gem 'contracts'
+gem 'minitest'
 gem 'guard'
 gem 'guard-minitest'
 gem 'pry'
-gem 'contracts'
 
