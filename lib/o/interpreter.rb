@@ -52,6 +52,7 @@ module O
           eval_ast(if_expression[:alt], env)
         end
 
+      when :_lambda
       # when node is a function call:
       # - get the procedure associated to the funcname symbol;
       # - get the args;
