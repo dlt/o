@@ -8,10 +8,34 @@ module O
     rule(float:   simple(:x))  { { float:   Float(x)   } }
     rule(symbol:  simple(:x))  { { symbol:  x.to_sym   } }
     rule(funcall: subtree(:x)) do
-      case x[:funcname][:symbol]
-      when :if
+      if x.key?(:funcname)
         args = x[:args]
-        { if: { test: args[0], conseq: args[1], alt: args[2] }}
+        case x[:funcname][:symbol]
+        when :if
+          {
+            if: {
+              test: args[0],
+              conseq: args[1],
+              alt: args[2]
+            }
+          }
+
+        when :begin
+          {
+            begin: {
+              exps: args
+            }
+          }
+        when :set!, :define
+          {
+            set!: {
+              varname: args.first,
+              exp: args.last
+            }
+          }
+        else
+          { funcall: x }
+        end
       else
         { funcall: x }
       end
@@ -29,6 +53,7 @@ module O
       symbol  |
       float   |
       integer |
+      lambdacall |
       funcall |
       lambda_exp
     }
@@ -46,7 +71,7 @@ module O
     rule(:right_paren) { str(")") }
 
     rule(:symbol) {
-      (match('[a-zA-Z=*-/]|\+') >> match('[a-zA-Z=*_-]').repeat).as(:symbol) >> space?
+      (match('[a-zA-Z=*-/]|\+') >> match('[a-zA-Z=*_-]|!').repeat).as(:symbol) >> space?
     }
 
     rule(:integer) {
@@ -93,10 +118,22 @@ module O
         space? >>
         list_of_expressions.as(:formal_params) >>
         space? >>
-        list_of_expressions.as(:lambda_body) >>
+        expression.as(:lambda_body) >>
         space? >>
         right_paren
       ).as(:lambda)
+    }
+
+    rule(:lambdacall) {
+      (
+        left_paren >>
+        space? >>
+        lambda_exp >>
+        space? >>
+        list_of_args.as(:args) >>
+        space? >>
+        right_paren
+      ).as(:funcall)
     }
 
     rule(:list_of_expressions) {

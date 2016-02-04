@@ -43,6 +43,15 @@ describe O::Parser do
   end
 
   it 'should parse lambda expressions' do
-    @parser.parse('(lambda (x) (1))').must_equal lambda: { formal_params: [{ symbol: :x }], lambda_body: [{integer: 1}]  }
+    @parser.parse('(lambda (x) 1)').must_equal lambda: { formal_params: [{ symbol: :x }], lambda_body: {integer: 1}  }
+  end
+
+  it 'should parse begin expressions' do
+    @parser.parse('(begin (if #t 1 2) (list 1))').must_equal begin: { exps: [{if: { test: { boolean: true }, conseq: { integer: 1 }, alt: { integer: 2 } }}, {funcall: { funcname: {symbol: :list}, args: [{ integer: 1}] }}] }
+  end
+
+  it 'should parse set/define expressions' do
+    @parser.parse('(define x (if #t 1 2))').must_equal set!: { varname: { symbol: :x }, exp: {if: { test: { boolean: true }, conseq: { integer: 1 }, alt: { integer: 2 } }} }
+    @parser.parse('(set! x (if #t 1 2))').must_equal set!: { varname: { symbol: :x }, exp: {if: { test: { boolean: true }, conseq: { integer: 1 }, alt: { integer: 2 } }} }
   end
 end

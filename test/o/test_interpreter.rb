@@ -19,7 +19,8 @@ describe O::Interpreter do
   end
 
   it 'should evaluate a symbol' do
-    @interpreter.eval('a-symbol').must_equal :"a-symbol"
+    @interpreter.eval('(begin (set! a 1) a)').must_equal 1
+    proc { @interpreter.eval('(begin (set! a 1) b)') }.must_raise Exception
   end
 
   it 'should evaluate function calls' do
@@ -41,5 +42,21 @@ describe O::Interpreter do
     @interpreter.eval('(if #f 1 2)').must_equal 2
     @interpreter.eval('(if #f 1 (if #t 2 3))').must_equal 2
     @interpreter.eval('(if #f 1 (if #f 2 3))').must_equal 3
+  end
+
+  it 'should evaluate lambda expressions' do
+    @interpreter.eval('((lambda (x) x) 2)').must_equal 2
+    @interpreter.eval('((lambda (y) y) 3)').must_equal 3
+    @interpreter.eval('((lambda (x) (* x x)) 3)').must_equal 9
+    @interpreter.eval('((lambda (y) (+ y ((lambda (x) (* x y)) 3))) 2)').must_equal 8
+  end
+
+  it 'should evaluate begin expressions' do
+    @interpreter.eval('(begin (if #t 1 2) (list 1 2))').must_equal [1, 2]
+    @interpreter.eval('(begin  (list 1 2)(if #t 1 2))').must_equal 1
+  end
+
+  it 'should evaluate set expressions' do
+    @interpreter.eval('(begin (set! x (if #t 1 2)) x)').must_equal 1
   end
 end
