@@ -5,16 +5,25 @@ tag](http://i1.kym-cdn.com/photos/images/newsfeed/000/330/782/285.gif)
 
 ## Todo
 
-- [ ] full numerical tower
 - [x] self evaluating exps
 - [x] built-in procedures
-- [ ] compound procedures
+- [x] compound procedures
 - [x] if
-- [ ] begin
-- [ ] cond
-- [ ] set! / define
+- [x] and/or
+- [x] =, <, >, <=, >=, not
+- [x] begin
+- [x] cond
+- [ ] map
+- [ ] filter
+- [x] set! / define
 - [ ] tail recursion
 - [ ] continuations
+- [ ] laziness
+- [ ] quote
+- [ ] quasiquote
+- [ ] unquote
+- [ ] unquote-splicing
 - [ ] stdlib
 - [ ] VM
 - [ ] compiler
+- [ ] full numerical tower

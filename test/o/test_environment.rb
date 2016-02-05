@@ -6,7 +6,7 @@ describe O::Environment do
   end
 
   it 'should implement builtin functions' do
-    @environment.keys.sort.must_equal %i(list * + - /).sort
+    @environment.keys.sort.must_equal %i(list * + - / = < > <= >= not or and).sort
   end
 
 end

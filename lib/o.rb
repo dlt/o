@@ -1,5 +1,5 @@
-require 'pry'
 require 'contracts'
+require 'o/types'
 require 'o/parser'
 require 'o/environment'
 require 'o/interpreter'

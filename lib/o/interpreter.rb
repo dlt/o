@@ -3,19 +3,24 @@ module O
   class Interpreter
     include Contracts
 
-    # A valid scheme value must be one of the following:
-    SchemeValue = Or[Integer, Float, Bool, String, Symbol, Array, Proc]
-
     # Top level environment containing builtin functions
     attr_reader :top_level_environment
 
     def initialize
       @top_level_environment = Environment.new \
-        :"+" => -> (*args) { Array(args).inject(0) { |s, v| s + v } },
-        :"*" => -> (*args) { Array(args).inject(1) { |p, v| p * v } },
-        :"-" => -> (*args) { args = Array(args); total = args.shift; args.each { |a| total -= a }; total },
-        :"/" => -> (*args) { args = Array(args).inject { |p, v| p / v } },
-        list:   -> (*args) { Array(args) }
+        :"+"  => -> (*args) { Array(args).inject(0) { |s, v| s + v } },
+        :"*"  => -> (*args) { Array(args).inject(1) { |p, v| p * v } },
+        :"-"  => -> (*args) { args = Array(args); total = args.shift; args.each { |a| total -= a }; total },
+        :"/"  => -> (*args) { args = Array(args).inject { |p, v| p / v } },
+        :"="  => -> (a, b)  { a == b  },
+        :">"  => -> (a, b)  { a > b  },
+        :"<"  => -> (a, b)  { a < b  },
+        :"<=" => -> (a, b)  { a <= b  },
+        :">=" => -> (a, b)  { a >= b  },
+        not:     -> (a)     { not a },
+        or:      -> (a, b)  { a or b },
+        and:     -> (a, b)  { a and b },
+        list:    -> (*args) { Array(args) }
     end
 
     # Evaluates a string containing scheme code and evaluates it.
@@ -33,7 +38,7 @@ module O
     # @param [Hash] ast_node the AST node to be evaluated.
     # @param [Environment] env the enviroment used as context for AST evaluation.
     # @return [SchemeValue]
-    Contract Hash, Environment => SchemeValue
+    Contract ASTNode, Environment => SchemeValue
     def eval_ast(ast_node, env)
       case node_type = ast_node.keys.first
 
@@ -60,9 +65,20 @@ module O
         eval_ast(exp, env).tap do |val|
           env.update(varname.fetch(:symbol) => val)
         end
+
       when :symbol
         symbol_expression = ast_node[node_type]
         env.fetch(symbol_expression)
+
+      when :cond
+        cond_expression = ast_node[node_type]
+        cond_expression.each do |clause|
+          if clause.key?(:else)
+            return eval_ast(clause[:else][:else_result], env)
+          elsif eval_ast(clause, env)
+            return eval_ast(clause[:result], env)
+          end
+        end
 
       # when node is a function call:
       # - get the procedure associated to the funcname symbol;
@@ -94,14 +110,13 @@ module O
       top_level_environment.fetch(symbol)
     end
 
-    Contract Hash, Environment => SchemeValue
+    Contract ASTNode, Environment => SchemeValue
     def apply(funcall_exp, env)
       if funcall_exp.key?(:funcname)
         funcname = funcall_exp[:funcname][:symbol]
-        args     = funcall_exp[:args]
+        builtin_procedure?(funcname) or raise "Invalid builtin procedure: #{funcname}"
 
-        builtin_procedure?(funcname) or raise "Invalid builtin procedure"
-
+        args      = funcall_exp[:args]
         procedure = get_builtin_procedure(funcname)
         arguments = args.map { |a| eval_ast(a, env) }
         procedure.call(*arguments)
@@ -111,16 +126,16 @@ module O
       end
     end
 
-    Contract Hash, Environment => SchemeValue
+    Contract ASTNode, Environment => SchemeValue
     def apply_compound_procedure(lambda_exp, env)
       params, body = lambda_exp[:lambda].values_at(:formal_params, :lambda_body)
       args         = lambda_exp[:args].map { |e| eval_ast(e, env) }
       params       = params.map { |p| p[:symbol] }
 
-      eval_ast(create_begin(body), env.extended_environment(params, args))
+      eval_ast(create_begin(body), Environment.new(Hash[params.zip(args)], env))
     end
 
-    Contract Hash => Hash
+    Contract ASTNode => ASTNode
     def create_begin(body)
       { begin: { exps: [body] } }
     end

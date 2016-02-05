@@ -20,22 +20,22 @@ describe O::Parser do
   end
 
   it 'should parse floats' do
-    @parser.parse('1.0').must_equal  float: 1.0
-    @parser.parse('0.0001').must_equal  float: 0.0001
+    @parser.parse('1.0').must_equal float: 1.0
+    @parser.parse('0.0001').must_equal float: 0.0001
   end
 
   it 'should parse identifiers' do
-    @parser.parse('lambda').must_equal  symbol: :lambda
-    @parser.parse('-def').must_equal  symbol: :"-def"
+    @parser.parse('lambda').must_equal symbol: :lambda
+    @parser.parse('-def').must_equal symbol: :"-def"
     @parser.parse('another-symbol').must_equal  symbol: :"another-symbol"
   end
 
   it 'should parse funcalls' do
-    @parser.parse('(list   1   )').must_equal  funcall: { funcname: {symbol: :list}, args: [{ integer: 1}] }
-    @parser.parse('(list  "string")').must_equal  funcall: { funcname: {symbol: :list}, args: [{ string: "string" }] }
-    @parser.parse('(list 1 2 3)').must_equal  funcall: { funcname: {symbol: :list}, args: [{ integer: 1}, {integer: 2}, {integer: 3}] }
-    @parser.parse('(list  (list 1))').must_equal  funcall: { funcname: {symbol: :list}, args: [{funcall: { funcname: {symbol: :list}, args: [{ integer: 1}] } }] }
-    @parser.parse('(list  (list "string"))').must_equal  funcall: { funcname: {symbol: :list}, args: [{funcall: { funcname: {symbol: :list}, args: [{ string: "string" }] } }] }
+    @parser.parse('(list   1   )').must_equal funcall: { funcname: {symbol: :list}, args: [{ integer: 1}] }
+    @parser.parse('(list  "string")').must_equal funcall: { funcname: {symbol: :list}, args: [{ string: "string" }] }
+    @parser.parse('(list 1 2 3)').must_equal funcall: { funcname: {symbol: :list}, args: [{ integer: 1}, {integer: 2}, {integer: 3}] }
+    @parser.parse('(list  (list 1))').must_equal funcall: { funcname: {symbol: :list}, args: [{funcall: { funcname: {symbol: :list}, args: [{ integer: 1}] } }] }
+    @parser.parse('(list  (list "string"))').must_equal funcall: { funcname: {symbol: :list}, args: [{funcall: { funcname: {symbol: :list}, args: [{ string: "string" }] } }] }
   end
 
   it 'should parse if expressions' do
@@ -53,5 +53,11 @@ describe O::Parser do
   it 'should parse set/define expressions' do
     @parser.parse('(define x (if #t 1 2))').must_equal set!: { varname: { symbol: :x }, exp: {if: { test: { boolean: true }, conseq: { integer: 1 }, alt: { integer: 2 } }} }
     @parser.parse('(set! x (if #t 1 2))').must_equal set!: { varname: { symbol: :x }, exp: {if: { test: { boolean: true }, conseq: { integer: 1 }, alt: { integer: 2 } }} }
+  end
+
+  it 'should parse cond expressions' do
+    @parser.parse('(cond ((= 1 1) 1))').must_equal :cond=>[{:funcall=>{:funcname=>{:symbol=>:"="}, :args=>[{:integer=>1}, {:integer=>1}]}, :result=>{:integer=>1}}]
+    @parser.parse('(cond ((= 1 1) 1) ((= 2 2) 2))').must_equal :cond=>[{:funcall=>{:funcname=>{:symbol=>:"="}, :args=>[{:integer=>1}, {:integer=>1}]}, :result=>{:integer=>1}}, {:funcall=>{:funcname=>{:symbol=>:"="}, :args=>[{:integer=>2}, {:integer=>2}]}, :result=>{:integer=>2}}]
+    @parser.parse('(cond ((= 1 1) 1) ((= 2 2) 2) (else 3))').must_equal :cond=>[{:funcall=>{:funcname=>{:symbol=>:"="}, :args=>[{:integer=>1}, {:integer=>1}]}, :result=>{:integer=>1}}, {:funcall=>{:funcname=>{:symbol=>:"="}, :args=>[{:integer=>2}, {:integer=>2}]}, :result=>{:integer=>2}}, {:else=>{:else_result=>{:integer=>3}}}]
   end
 end

@@ -7,6 +7,12 @@ module O
     rule(boolean: simple(:x))  { { boolean: x == "#t"  } }
     rule(float:   simple(:x))  { { float:   Float(x)   } }
     rule(symbol:  simple(:x))  { { symbol:  x.to_sym   } }
+    rule(cond:    subtree(:clauses)) do
+      if clauses.last.is_a?(Hash) and clauses.last.key?(:else) and clauses.last[:else].nil?
+        clauses.pop
+      end
+      { cond: clauses }
+    end
     rule(funcall: subtree(:x)) do
       if x.key?(:funcname)
         args = x[:args]
@@ -14,9 +20,9 @@ module O
         when :if
           {
             if: {
-              test: args[0],
+              test:   args[0],
               conseq: args[1],
-              alt: args[2]
+              alt:    args[2]
             }
           }
 
@@ -48,14 +54,16 @@ module O
     root :expression
 
     rule(:expression) {
-      boolean |
-      string  |
-      symbol  |
-      float   |
-      integer |
+      boolean    |
+      string     |
+      symbol     |
+      float      |
+      integer    |
+      cond       |
       lambdacall |
-      funcall |
+      funcall    |
       lambda_exp
+
     }
 
     rule(:space) {
@@ -71,7 +79,7 @@ module O
     rule(:right_paren) { str(")") }
 
     rule(:symbol) {
-      (match('[a-zA-Z=*-/]|\+') >> match('[a-zA-Z=*_-]|!').repeat).as(:symbol) >> space?
+      (match('[a-zA-Z=*-/]|\+|>|<') >> match('[a-zA-Z=*_-]|!|>|<').repeat).as(:symbol) >> space?
     }
 
     rule(:integer) {
@@ -92,6 +100,18 @@ module O
     rule(:boolean) {
       (str("#f") | str("#t")).as(:boolean)
     }
+
+    rule :cond do
+      (
+        left_paren >>
+        space? >>
+        str('cond ') >>
+        space? >>
+        (left_paren >> (funcall >> space >> expression.as(:result)).repeat(1) >> right_paren >> space?).repeat(1) >>
+        (left_paren >> space? >> str('else') >> space >> expression.as(:else_result) >> space? >> right_paren).maybe.as(:else) >>
+        right_paren
+      ).as(:cond)
+    end
 
     rule(:funcall) {
       (
