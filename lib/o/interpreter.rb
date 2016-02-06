@@ -80,14 +80,18 @@ module O
           end
         end
 
-      when :let
+      when :let, :"let*"
         let_expression = ast_node[node_type]
         bindings, body = let_expression.values_at(:bindings, :body)
         new_env        = {}
 
         bindings.each do |binding|
           name = binding[:name][:symbol]
-          val  = eval_ast(binding[:val], env)
+          val  = if node_type == :let
+            eval_ast(binding[:val], env)
+          else
+            eval_ast(binding[:val], Environment.new(new_env, env))
+          end
           new_env.update(name => val)
         end
 

@@ -62,6 +62,7 @@ module O
         integer    |
         cond       |
         let_exp    |
+        let_star   |
         lambdacall |
         funcall    |
         lambda_exp
@@ -124,6 +125,17 @@ module O
         expression.as(:body) >>
         right_paren
       ).as(:let)
+    end
+
+    rule :let_star do
+      (
+        left_paren >>
+        str('let*') >>
+        space? >>
+        (left_paren >> bindings >> right_paren >> space?) >>
+        expression.as(:body) >>
+        right_paren
+      ).as(:"let*")
     end
 
     rule :bindings do

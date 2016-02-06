@@ -17,7 +17,7 @@ tag](http://i1.kym-cdn.com/photos/images/newsfeed/000/330/782/285.gif)
 - [ ] filter
 - [x] set! / define
 - [x] let
-- [ ] let\*
+- [x] let\*
 - [ ] tail recursion
 - [ ] continuations
 - [ ] laziness

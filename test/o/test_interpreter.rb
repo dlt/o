@@ -101,4 +101,9 @@ describe O::Interpreter do
     @interpreter.eval('(let ((x 1)) x)').must_equal 1
     @interpreter.eval('(let ((x 1) (y 2)) y)').must_equal 2
   end
+
+  it 'should evaluate let* expressions' do
+    @interpreter.eval('(let* ((x 1) (y x)) y)').must_equal 1
+    @interpreter.eval('(let* ((x 1) (y (+ x 1))) y)').must_equal 2
+  end
 end
