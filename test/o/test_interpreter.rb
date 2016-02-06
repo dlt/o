@@ -5,7 +5,6 @@ describe O::Interpreter do
     @interpreter = O::Interpreter.new
   end
 
-
   it 'should evaluate an int' do
     @interpreter.eval("1").must_equal 1
   end
@@ -96,5 +95,10 @@ describe O::Interpreter do
     @interpreter.eval('(cond ((= 1 1) 1) ((= 2 2) 2))').must_equal 1
     @interpreter.eval('(cond ((= 2 1) 1) ((= 2 2) 2))').must_equal 2
     @interpreter.eval('(cond ((= 2 1) 1) ((= 2 4) 2) (else 3))').must_equal 3
+  end
+
+  it 'should evaluate let expressions' do
+    @interpreter.eval('(let ((x 1)) x)').must_equal 1
+    @interpreter.eval('(let ((x 1) (y 2)) y)').must_equal 2
   end
 end

@@ -55,6 +55,11 @@ describe O::Parser do
     @parser.parse('(set! x (if #t 1 2))').must_equal set!: { varname: { symbol: :x }, exp: {if: { test: { boolean: true }, conseq: { integer: 1 }, alt: { integer: 2 } }} }
   end
 
+  it 'should parse let expressions' do
+    @parser.parse('(let ((x 1)) x)').must_equal let: { bindings: [{ name: {symbol: :x}, val: {integer: 1}}], body: { symbol: :x }}
+    @parser.parse('(let ((x 1) (y 2)) x)').must_equal let: { bindings: [{ name: {symbol: :x}, val: {integer: 1}}, { name: {symbol: :y}, val: {integer: 2}}], body: { symbol: :x }}
+  end
+
   it 'should parse cond expressions' do
     @parser.parse('(cond ((= 1 1) 1))').must_equal :cond=>[{:funcall=>{:funcname=>{:symbol=>:"="}, :args=>[{:integer=>1}, {:integer=>1}]}, :result=>{:integer=>1}}]
     @parser.parse('(cond ((= 1 1) 1) ((= 2 2) 2))').must_equal :cond=>[{:funcall=>{:funcname=>{:symbol=>:"="}, :args=>[{:integer=>1}, {:integer=>1}]}, :result=>{:integer=>1}}, {:funcall=>{:funcname=>{:symbol=>:"="}, :args=>[{:integer=>2}, {:integer=>2}]}, :result=>{:integer=>2}}]

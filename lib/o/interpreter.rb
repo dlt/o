@@ -46,6 +46,10 @@ module O
       when :integer, :boolean, :string, :float
         ast_node[node_type]
 
+      when :symbol
+        symbol_expression = ast_node[node_type]
+        env.fetch(symbol_expression)
+
       # when node is a if expression, return its conseq or alternate part depending on
       # the result of the evaluation of its test part.
       when :if
@@ -66,10 +70,6 @@ module O
           env.update(varname.fetch(:symbol) => val)
         end
 
-      when :symbol
-        symbol_expression = ast_node[node_type]
-        env.fetch(symbol_expression)
-
       when :cond
         cond_expression = ast_node[node_type]
         cond_expression.each do |clause|
@@ -80,12 +80,25 @@ module O
           end
         end
 
+      when :let
+        let_expression = ast_node[node_type]
+        bindings, body = let_expression.values_at(:bindings, :body)
+        new_env        = {}
+
+        bindings.each do |binding|
+          name = binding[:name][:symbol]
+          val  = eval_ast(binding[:val], env)
+          new_env.update(name => val)
+        end
+
+        eval_ast(create_begin(body), Environment.new(new_env, env))
+
       # when node is a function call:
       # - get the procedure associated to the funcname symbol;
       # - get the args;
       # - evaluate the args and apply the function the values returned in these evaluations as arguments.
       when :funcall
-        funcall_exp = ast_node[:funcall]
+        funcall_exp = ast_node[node_type]
         apply(funcall_exp, env)
       end
     end

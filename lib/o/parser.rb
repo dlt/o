@@ -54,20 +54,22 @@ module O
     root :expression
 
     rule(:expression) {
-      boolean    |
-      string     |
-      symbol     |
-      float      |
-      integer    |
-      cond       |
-      lambdacall |
-      funcall    |
-      lambda_exp
-
+      (
+        boolean    |
+        string     |
+        symbol     |
+        float      |
+        integer    |
+        cond       |
+        let_exp    |
+        lambdacall |
+        funcall    |
+        lambda_exp
+      )
     }
 
     rule(:space) {
-      match('\s').repeat(1)
+      str(' ').repeat(1)
     }
 
     rule(:space?) {
@@ -98,19 +100,40 @@ module O
     }
 
     rule(:boolean) {
-      (str("#f") | str("#t")).as(:boolean)
+      (str("#f") | str("#t")).as(:boolean) >> space?
     }
 
     rule :cond do
       (
         left_paren >>
         space? >>
-        str('cond ') >>
+        str('cond') >>
         space? >>
         (left_paren >> (funcall >> space >> expression.as(:result)).repeat(1) >> right_paren >> space?).repeat(1) >>
         (left_paren >> space? >> str('else') >> space >> expression.as(:else_result) >> space? >> right_paren).maybe.as(:else) >>
         right_paren
-      ).as(:cond)
+      ).as(:cond) >> space?
+    end
+
+    rule :let_exp do
+      (
+        left_paren >>
+        str('let') >>
+        space? >>
+        (left_paren >> bindings >> right_paren >> space?) >>
+        expression.as(:body) >>
+        right_paren
+      ).as(:let)
+    end
+
+    rule :bindings do
+      (
+        left_paren >>
+        symbol.as(:name) >>
+        expression.as(:val) >>
+        right_paren >>
+        space?
+      ).repeat(1).as(:bindings)
     end
 
     rule(:funcall) {
