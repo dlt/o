@@ -16,7 +16,7 @@ tag](http://i1.kym-cdn.com/photos/images/newsfeed/000/330/782/285.gif)
 - [x] set! / define
 - [x] let
 - [x] let\*
-- [ ] tail recursion
+- [x] tail recursion
 - [ ] laziness
 - [ ] quote
 - [ ] quasiquote

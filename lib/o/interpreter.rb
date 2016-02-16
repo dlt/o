@@ -35,75 +35,91 @@ module O
     private
     # Evaluates the AST and returns a scheme value.
     #
-    # @param [Hash] ast_node the AST node to be evaluated.
+    # @param [ASTNode] ast_node the AST node to be evaluated.
     # @param [Environment] env the enviroment used as context for AST evaluation.
     # @return [SchemeValue]
     Contract ASTNode, Environment => SchemeValue
     def eval_ast(ast_node, env)
-      case node_type = ast_node.keys.first
+      while true
+        return ast_node unless ast_node.respond_to? :keys
+        node_type = ast_node.keys.first
 
-      # when node represents a self-evaluating expression, just return the expression value.
-      when :integer, :boolean, :string, :float
-        ast_node[node_type]
+        if %i(integer boolean string float).include?(node_type)
+          return ast_node[node_type]
 
-      when :symbol
-        symbol_expression = ast_node[node_type]
-        env.fetch(symbol_expression)
+        elsif node_type == :symbol
+          symbol_expression = ast_node[node_type]
+          return env.fetch(symbol_expression)
 
-      # when node is a if expression, return its conseq or alternate part depending on
-      # the result of the evaluation of its test part.
-      when :if
-        if_expression     = ast_node[node_type]
-        test, conseq, alt = if_expression.values_at(:test, :conseq, :alt)
-
-        eval_ast(test, env) ? eval_ast(conseq, env) : eval_ast(alt, env)
-
-      when :begin
-        begin_expression = ast_node[node_type]
-        begin_expression[:exps].map { |exp| eval_ast(exp, env) }.last
-
-      when :set!
-        set_expression = ast_node[node_type]
-        varname, exp   = set_expression.values_at(:varname, :exp)
-
-        eval_ast(exp, env).tap do |val|
-          env.update(varname.fetch(:symbol) => val)
-        end
-
-      when :cond
-        cond_expression = ast_node[node_type]
-        cond_expression.each do |clause|
-          if clause.key?(:else)
-            return eval_ast(clause[:else][:else_result], env)
-          elsif eval_ast(clause, env)
-            return eval_ast(clause[:result], env)
-          end
-        end
-
-      when :let, :"let*"
-        let_expression = ast_node[node_type]
-        bindings, body = let_expression.values_at(:bindings, :body)
-        new_env        = {}
-
-        bindings.each do |binding|
-          name = binding[:name][:symbol]
-          val  = if node_type == :let
-            eval_ast(binding[:val], env)
+        elsif node_type == :if
+          if_expression = ast_node[node_type]
+          test, conseq, alt = if_expression.values_at(:test, :conseq, :alt)
+          ast_node = if eval_ast(test, env)
+            conseq
           else
-            eval_ast(binding[:val], Environment.new(new_env, env))
+            alt
           end
-          new_env.update(name => val)
+
+        elsif node_type == :begin
+          begin_expression = ast_node[node_type]
+          return begin_expression[:exps].map { |exp| eval_ast(exp, env) }.last
+
+        elsif node_type == :set!
+          set_expression = ast_node[node_type]
+          varname, exp   = set_expression.values_at(:varname, :exp)
+
+          return eval_ast(exp, env).tap do |val|
+            env.update(varname.fetch(:symbol) => val)
+          end
+
+        elsif node_type == :cond
+          cond_expression = ast_node[node_type]
+          cond_expression.each do |clause|
+            if clause.key?(:else)
+              ast_node = eval_ast(clause[:else][:else_result], env)
+              break
+            elsif eval_ast(clause, env)
+              ast_node = eval_ast(clause[:result], env)
+              break
+            end
+          end
+
+        elsif node_type == :let || node_type == :'let*'
+          let_expression = ast_node[node_type]
+          bindings, body = let_expression.values_at(:bindings, :body)
+          new_env        = {}
+
+          bindings.each do |binding|
+            name = binding[:name][:symbol]
+            val  = if node_type == :let
+              eval_ast(binding[:val], env)
+            else
+              eval_ast(binding[:val], Environment.new(new_env, env))
+            end
+            new_env.update(name => val)
+          end
+          ast_node = eval_ast(create_begin(body), Environment.new(new_env, env))
+
+        elsif node_type == :funcall
+          funcall_exp = ast_node[node_type]
+
+          if funcall_exp.key?(:funcname)
+            funcname = funcall_exp[:funcname][:symbol]
+            builtin_procedure?(funcname) or raise "Invalid builtin procedure: #{funcname}"
+
+            args      = funcall_exp[:args]
+            procedure = get_builtin_procedure(funcname)
+            arguments = args.map { |a| eval_ast(a, env) }
+            ast_node  = procedure.call(*arguments)
+
+          elsif funcall_exp.key?(:lambda)
+            params, body = funcall_exp[:lambda].values_at(:formal_params, :lambda_body)
+            args         = funcall_exp[:args].map { |e| eval_ast(e, env) }
+            params       = params.map { |p| p[:symbol] }
+
+            ast_node = eval_ast(create_begin(body), Environment.new(Hash[params.zip(args)], env))
+          end
         end
-
-        eval_ast(create_begin(body), Environment.new(new_env, env))
-
-      # when node is a function call:
-      # - get the procedure associated to the funcname symbol;
-      # - get the args;
-      # - evaluate the args and apply the function the values returned in these evaluations as arguments.
-      when :funcall
-        funcall_exp = ast_node[node_type]
-        apply(funcall_exp, env)
       end
     end
 
@@ -127,31 +143,10 @@ module O
       top_level_environment.fetch(symbol)
     end
 
-    Contract ASTNode, Environment => SchemeValue
-    def apply(funcall_exp, env)
-      if funcall_exp.key?(:funcname)
-        funcname = funcall_exp[:funcname][:symbol]
-        builtin_procedure?(funcname) or raise "Invalid builtin procedure: #{funcname}"
-
-        args      = funcall_exp[:args]
-        procedure = get_builtin_procedure(funcname)
-        arguments = args.map { |a| eval_ast(a, env) }
-        procedure.call(*arguments)
-
-      elsif funcall_exp.key?(:lambda)
-        apply_compound_procedure(funcall_exp, env)
-      end
-    end
-
-    Contract ASTNode, Environment => SchemeValue
-    def apply_compound_procedure(lambda_exp, env)
-      params, body = lambda_exp[:lambda].values_at(:formal_params, :lambda_body)
-      args         = lambda_exp[:args].map { |e| eval_ast(e, env) }
-      params       = params.map { |p| p[:symbol] }
-
-      eval_ast(create_begin(body), Environment.new(Hash[params.zip(args)], env))
-    end
-
+    # Given a ASTNode returns a begin node containing it.
+    #
+    # @param [ASTNode] ASTNode
+    # @return [ASTNode] Begin node containing the passed node.
     Contract ASTNode => ASTNode
     def create_begin(body)
       { begin: { exps: [body] } }
