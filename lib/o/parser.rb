@@ -195,7 +195,7 @@ module O
       left_paren >> (expression >> space?).repeat(1) >> right_paren
     }
 
-    Contract String => Hash
+    Contract String => ASTNode
     def parse(string)
       ASTBuilder.new.apply(super)
     rescue => error

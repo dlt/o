@@ -13,18 +13,16 @@ tag](http://i1.kym-cdn.com/photos/images/newsfeed/000/330/782/285.gif)
 - [x] =, <, >, <=, >=, not
 - [x] begin
 - [x] cond
-- [ ] map
-- [ ] filter
 - [x] set! / define
 - [x] let
 - [x] let\*
 - [ ] tail recursion
-- [ ] continuations
 - [ ] laziness
 - [ ] quote
 - [ ] quasiquote
 - [ ] unquote
 - [ ] unquote-splicing
+- [ ] continuations
 - [ ] stdlib
 - [ ] VM
 - [ ] compiler
