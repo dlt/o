@@ -4,44 +4,79 @@ module O
       attr_reader :name
       attr_accessor :contents
 
-      def initialize(name:, contents:)
+      def initialize(name, contents = nil)
         @name, @contents = name, contents
       end
     end
 
+    class Assembler
+      def initialize(machine, controller_text)
+        @machine, @controller_text = machine, controller_text
+      end
+
+      def assemble
+      end
+
+      def extract_labels(text)
+        text.map do |instruction|
+        end
+      end
+
+      def update_instructions
+      end
+    end
+
+    Instruction = Class.new(Struct.new(:text, :instruction))
+
     class Machine
       include Contracts
 
-      attr_reader :registers
-      attr_reader :stack
-      attr_reader :operations
+      attr_reader :registers, :stack
 
-      attr_accessor :instruction_sequence
+      attr_accessor :instruction_sequence, :operations
 
       def self.create(register_names, operations, controller_text)
         new.tap do |machine|
           machine.allocate_registers(register_names)
-          machine.install_operations(operations)
-          machine.install_instruction_sequence(assemble(controller_text))
+          machine.operations = operations
+          machine.instruction_sequence = machine.assemble(controller_text)
+        end
+      end
+
+      def assemble(text)
+      end
+
+      def update_instructions(instructions, labels)
+        instructions.each do |inst|
+          inst.instruction = make_execution_procedure(inst.text, labels, machine)
         end
       end
 
       def initialize
-        @stack = []
-        @instruction_sequence = []
+        @stack, @instruction_sequence = [], []
 
-        @pc = Register.new(name: :pc)
-        @flag = Register.new(name: :flag)
-        @operations = { initialize_stack: ->() { @stack.clear } }
-      end
-
-      def install_operations(operations)
-        @operations = operations
+        @pc, @flag  = Register.new(:pc), Register.new(:flag)
+        @operations = {initialize_stack: -> { @stack.clear }}
       end
 
       def start
         @pc.contents = @instruction_sequence
         execute
+      end
+
+      Contract Symbol => Bool
+      def allocate_register(name)
+        registers.merge!(name => Register.new(name))
+        true
+      rescue
+        false
+      end
+
+      Contract Symbol => Register
+      def lookup_register(register_name)
+        registers.fetch(register_name)
+      rescue
+        raise "Invalid register name #{register_name}"
       end
 
       def execute
@@ -52,11 +87,6 @@ module O
           instruction_execution_procedure(insts.first).execute
           execute
         end
-      end
-
-      Contract Symbol => Bool
-      def allocate_register(name)
-        registers.update(name => Register.new(name: name, contents: nil))
       end
 
       Contract ArrayOf[Symbol] => Bool
@@ -72,13 +102,6 @@ module O
         lookup_register(register_name).contents
       end
 
-      Contract Symbol => Register
-      def lookup_register(register_name)
-        registers.fetch(register_name)
-      rescue
-        raise "Invalid register name #{register_name}"
-      end
-
       Contract Symbol, SchemeValue => Bool
       def set_register_contents(register_name, value)
         if registers.keys.include?(register_name)
@@ -89,11 +112,8 @@ module O
         end
       end
 
-      def allocate_default_registers
-        @registers ||= {
-          pc:   @pc,
-          flag: @flag
-        }
+      def registers
+        @registers ||= {pc: @pc, flag: @flag}
       end
     end
   end
