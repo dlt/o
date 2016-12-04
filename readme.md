@@ -17,12 +17,12 @@ tag](http://i1.kym-cdn.com/photos/images/newsfeed/000/330/782/285.gif)
 - [x] let
 - [x] let\*
 - [x] tail recursion
+- [x] VM
 - [ ] quote
 - [ ] quasiquote
 - [ ] unquote
 - [ ] unquote-splicing
 - [ ] stdlib
 - [ ] continuations
-- [ ] VM
 - [ ] compiler
 - [ ] laziness
