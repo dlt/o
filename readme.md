@@ -1,9 +1,9 @@
 # O
 
-![alt
-tag](http://i1.kym-cdn.com/photos/images/newsfeed/000/330/782/285.gif)
+![alt tag](http://i1.kym-cdn.com/photos/images/newsfeed/000/330/782/285.gif)
 
-## Todo
+## Scheme Interpreter and a simple VM.
+## All code borrowed from Chapters 4 and 5 of [SICP](https://mitpress.mit.edu/sicp/full-text/book/book-Z-H-4.html#%_toc_start).
 
 - [x] self evaluating exps
 - [x] built-in procedures
@@ -18,11 +18,3 @@ tag](http://i1.kym-cdn.com/photos/images/newsfeed/000/330/782/285.gif)
 - [x] let\*
 - [x] tail recursion
 - [x] VM
-- [ ] quote
-- [ ] quasiquote
-- [ ] unquote
-- [ ] unquote-splicing
-- [ ] stdlib
-- [ ] continuations
-- [ ] compiler
-- [ ] laziness

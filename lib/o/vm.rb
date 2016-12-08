@@ -87,8 +87,63 @@ module O
           make_branch(inst, labels)
         when :goto
           make_goto(inst, labels)
+        when :save
+          make_save(inst)
+        when :restore
+          make_restore(inst)
+        when :perform
+          make_perform(inst)
         else
-          raise "fuck #{inst.inspect}"
+          raise "fuck #{inst}"
+        end
+      end
+
+      def make_save(inst)
+        register = machine.get_register(stack_inst_reg_name(inst))
+        lambda do
+          machine.stack_push(reg.contents)
+          machine.advance_pc
+        end
+      end
+
+      def make_restore(inst)
+        register = machine.get_register(stack_inst_reg_name(inst))
+        lambda do
+          reg.contents = machine.stack_pop
+          machine.advance_pc
+        end
+      end
+
+      def make_perform(inst)
+        action = perform_action(inst)
+        if operation_exp?(action)
+          action_proc = make_operation_expression(action)
+          lambda do
+            action_proc.call
+            machine.advance_pc
+          end
+        else
+          raise "Bad PERFORM instruction -- ASSEMBLE #{inst}"
+        end
+      end
+
+      def perform_action(inst)
+        inst.cdr
+      end
+
+      def make_assign(inst)
+        target = machine.get_register(assign_reg_name(inst))
+        value_exp = assign_value_exp(inst)
+
+        value_proc = if operation_exp?(value_exp)
+          make_operation_expression(value_exp)
+        else
+          make_primitive_expression(value_exp.car)
+        end
+
+        proc do
+          target.contents = value_proc.call
+          machine.advance_pc
         end
       end
 
@@ -125,6 +180,39 @@ module O
         end
       end
 
+      def make_test(inst)
+        condition = test_condition(inst)
+        if operation_exp?(condition)
+          condition_proc = make_operation_expression(condition)
+          lambda do
+            machine.get_register(:flag).contents = condition_proc.call
+            machine.advance_pc
+          end
+        else
+          raise "Bad TEST instruction -- ASSEMBLE #{inst}"
+        end
+      end
+
+      def make_primitive_expression(exp)
+        if constant_expression?(exp)
+          lambda do
+            constant_expression_value(exp)
+          end
+        elsif label_expression?(exp)
+          insts = labels.fecth(label_expression_label(exp))
+          lambda do
+            insts
+          end
+        elsif register_expression?(exp)
+          register = machine.lookup_register(register_expression_reg(exp))
+          lambda do
+            register.contents
+          end
+        else
+          raise "Unknown expression type -- ASSEMBLE #{exp}"
+        end
+      end
+
       def branch_dest(inst)
         inst[1]
       end
@@ -135,6 +223,10 @@ module O
 
       def assign_reg_name(assign_inst)
         assign_inst[1]
+      end
+
+      def stack_inst_reg_name(inst)
+        inst[1]
       end
 
       def assign_value_exp(assign_inst)
@@ -158,19 +250,6 @@ module O
           list.pop
         end
         list.push(val)
-      end
-
-      def make_test(inst)
-        condition = test_condition(inst)
-        if operation_exp?(condition)
-          condition_proc = make_operation_expression(condition)
-          lambda do
-            machine.get_register(:flag).contents = condition_proc.call
-            machine.advance_pc
-          end
-        else
-          raise "Bad TEST instruction -- ASSEMBLE #{inst}"
-        end
       end
 
       def test_condition(inst)
@@ -199,42 +278,6 @@ module O
 
       def label_expression_label(exp)
         exp[1]
-      end
-
-      def make_primitive_expression(exp)
-        if constant_expression?(exp)
-          lambda do
-            constant_expression_value(exp)
-          end
-        elsif label_expression?(exp)
-          insts = labels.fecth(label_expression_label(exp))
-          lambda do
-            insts
-          end
-        elsif register_expression?(exp)
-          register = machine.lookup_register(register_expression_reg(exp))
-          lambda do
-            register.contents
-          end
-        else
-          raise "Unknown expression type -- ASSEMBLE #{exp}"
-        end
-      end
-
-      def make_assign(inst)
-        target = machine.get_register(assign_reg_name(inst))
-        value_exp = assign_value_exp(inst)
-
-        value_proc = if operation_exp?(value_exp)
-          make_operation_expression(value_exp)
-        else
-          make_primitive_expression(value_exp.car)
-        end
-
-        proc do
-          target.contents = value_proc.call
-          machine.advance_pc
-        end
       end
 
       def lookup_prim(op)
@@ -292,10 +335,18 @@ module O
       def start
         @pc.contents = @instruction_sequence
         execute
-      end#
+      end
 
       def install_instruction_sequence(seq)
         @instruction_sequence = seq
+      end
+
+      def stack_push(val)
+        @stack.push(val)
+      end
+
+      def stack_pop
+        @stack.pop
       end
 
       Contract Symbol => Bool
